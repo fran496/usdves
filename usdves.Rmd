@@ -1,0 +1,25 @@
+---
+title: "usdves"
+author: "Francisco Rivas"
+date: "19/9/2020"
+output: html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Inputs 
+## Embedded Application
+
+It's also possible to embed an entire Shiny application within an R Markdown document using the `shinyAppDir` function. This example embeds a Shiny application located in another directory:
+
+```{r tabsets, echo=FALSE}
+shinyAppDir(
+  system.file("usdves", package = "shiny"),
+  options = list(
+    width = "100%", height = 550
+  )
+)
+```
