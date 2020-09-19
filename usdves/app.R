@@ -1,46 +1,48 @@
 library(shiny)
+library(reactable)
+library(crosstalk)
+library(lubridate)
+
+usdves <- read.csv2("../data/usdves.csv", stringsAsFactors=F)
+table <- SharedData$new(usdves)
 
 ui <- fluidPage(
-    titlePanel("Descargar datos"),
+    titlePanel("Data del par USDVES diario"),
     sidebarLayout(
         sidebarPanel(
-            selectInput("Año", "Escoje un año:",
-                        choices = c(2020)),
-
-            selectInput("Mes", "Escoje un mes:",
-                        choices = c("Septiembre")),
-            downloadButton("downloadData", "Download")
-
-        ),
+            filter_select("year", "Año", table, ~year(date)),
+            filter_select("month", "Mes", table, ~month(date, label=T, abbr=F)),
+            downloadButton("download", "Descargar tabla")
+            ),
         mainPanel(
-            tableOutput("table")
+            reactableOutput("RT")
         )
     )
 )
 
 server <- function(input, output) {
+    output$RT <- renderReactable({
+        reactable(table, minRow=10, defaultPageSize=10,
+                  columns=list(
+                      "date"=colDef(name="Fecha",
+                                     format=colFormat(datetime=T)),
+                      "usdves"=colDef(name="USDVES",
+                                      format=colFormat(prefix="Bs.S ",
+                                                       separators=T))
+                  ),
+                  highlight=T, striped=T,
+                  fullWidth=T, defaultSorted=list("date"="asc"))
+        })
 
-    datasetInput <- reactive({
-        switch(input$dataset,
-               "rock" = rock,
-               "pressure" = pressure,
-               "cars" = cars)
-    })
-
-    output$table <- renderTable({
-        datasetInput()
-    })
-
-    output$downloadData <- downloadHandler(
-        filename = function() {
-            paste(input$dataset, ".csv", sep = "")
+    output$download <- downloadHandler(
+        filename=function() {
+            paste("usdves.csv", sep="-")
         },
-        content = function(file) {
-            write.csv(datasetInput(), file, row.names = FALSE)
+        content=function(file) {
+            write.table(usdves[input[["RT_rows_all"]],],
+                        file, row.names=F, quote=F, sep=";")
         }
     )
-
 }
 
-# Create Shiny app ----
 shinyApp(ui, server)
