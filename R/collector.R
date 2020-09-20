@@ -22,7 +22,7 @@ update_usdves <- function() {
 
   write.table(new_row,
               file,
-              sep=",",
+              sep=";",
               append=T,
               col.names=!file.exists(file),
               row.names=F,
