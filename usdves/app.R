@@ -1,26 +1,22 @@
 library(shiny)
 library(reactable)
-library(crosstalk)
 library(lubridate)
 
 usdves <- read.csv2("../data/usdves.csv", stringsAsFactors=F)
-
-showAll <- function(availableInputValues) {
-    if(length(availableInputValues) > 1) {
-        "Todo"
-    } else {
-        NULL
-    }
-}
+usdves$years <- year(usdves$date)
+usdves$months <- as.character(month(usdves$date, label=T, abbr=F))
 
 ui <- fluidPage(
-    titlePanel("Data del par USDVES diario"),
+    titlePanel("Datos del par USD/VES diario"),
     sidebarLayout(
         sidebarPanel(
-            selectInput("year", label="Año", choices=c("Todo"="",
-                                                       year(usdves$date))),
-            selectInput("month",label="Mes", choices=c("Todo"="")),
-            downloadButton("download", "Descargar tabla")
+            selectizeInput("year",
+                        label="Año",
+                        choices=c("Todo", usdves$years)),
+            selectizeInput("month",
+                        label="Mes",
+                        choices="Todo"),
+             downloadButton("download", "Descargar tabla")
             ),
         mainPanel(
             reactableOutput("RT")
@@ -35,40 +31,48 @@ server <- function(input, output, session) {
 
     filteredData <- reactive({
         data <- usdves
-        year <- year(data$date)
-        month <- month(data$date, label=T, abbr=F)
 
-        if (input$year != "") {
-            data <- data[year==input$year,]
+        if (input$year != "Todo") {
+            data <- data[data$years == input$year,]
         }
 
-        if (input$month != "") {
-            data <- data[month==input$month,]
+        if (input$month != "Todo") {
+            data <- data[data$months == input$month,]
         }
 
         return(data)
     })
 
+    dataReady <- reactive({
+        filteredData()[, c("date", "usdves")]
+    })
 
     observeEvent(input$year, {
         data <- filteredData()
-        months <- as.character(month(data$date, label=T, abbr=F))
-        updateSelectInput(session,
-                          "month",
-                          choices= months)
+
+        updateSelectizeInput(session,
+                             "month",
+                             choices=c("Todo",
+                                       data$months[data$years==input$year])
+        )
     })
 
+
     output$RT <- renderReactable({
-        reactable(filteredData(), minRow=10, defaultPageSize=10,
+        reactable(dataReady(),
+                  minRow=10,
+                  defaultPageSize=10,
+                  highlight=T,
+                  striped=T,
+                  fullWidth=T,
+                  defaultSorted=list("date"="asc"),
                   columns=list(
                       "date"=colDef(name="Fecha",
-                                     format=colFormat(datetime=T)),
+                                    format=colFormat(datetime=T)),
                       "usdves"=colDef(name="USDVES",
                                       format=colFormat(prefix="Bs.S ",
                                                        separators=T))
-                  ),
-                  highlight=T, striped=T,
-                  fullWidth=T, defaultSorted=list("date"="asc"))
+                  ))
         })
 
     output$download <- downloadHandler(
@@ -76,7 +80,11 @@ server <- function(input, output, session) {
             paste0("usdves-", input$month, "-", input$year, ".csv")
         },
         content=function(file) {
-            write.table(filteredData(), file, row.names=F, quote=F, sep=";")
+            write.table(dataReady(),
+                        file,
+                        row.names=F,
+                        quote=F,
+                        sep=";")
         }
     )
 }
