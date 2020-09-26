@@ -14,7 +14,10 @@ ui <- fluidPage(
             selectizeInput("month",
                         label="Mes",
                         choices="Todo"),
-             downloadButton("download", "Descargar tabla")
+            radioButtons("file_extension",
+                         label="Extensión del archivo a descargar",
+                         choices=c(".csv", ".xlsx")),
+            downloadButton("download", "Descargar tabla")
             ),
         mainPanel(
             reactable::reactableOutput("RT")
@@ -75,14 +78,18 @@ server <- function(input, output, session) {
 
     output$download <- downloadHandler(
         filename=function() {
-            paste0("usdves-", input$month, "-", input$year, ".csv")
+          paste0("usdves-", input$month, "-",input$year, input$file_extension)
         },
         content=function(file) {
-            write.table(dataReady(),
-                        file,
-                        row.names=F,
-                        quote=F,
-                        sep=";")
+            if (input$file_extension == ".xlsx") {
+              writexl::write_xlsx(dataReady(), file, col_names=T)
+            } else {
+              write.table(dataReady(),
+                          file,
+                          row.names=F,
+                          quote=F,
+                          sep=";")
+            }
         }
     )
 }
