@@ -1,10 +1,8 @@
 library(shiny)
-library(reactable)
-library(lubridate)
 
 usdves <- read.csv2("../data/usdves.csv", stringsAsFactors=F)
-usdves$years <- year(usdves$date)
-usdves$months <- as.character(month(usdves$date, label=T, abbr=F))
+usdves$years <- lubridate::year(usdves$date)
+usdves$months <- as.character(lubridate::month(usdves$date, label=T, abbr=F))
 
 ui <- fluidPage(
     titlePanel("Datos del par USD/VES diario"),
@@ -19,7 +17,7 @@ ui <- fluidPage(
              downloadButton("download", "Descargar tabla")
             ),
         mainPanel(
-            reactableOutput("RT")
+            reactable::reactableOutput("RT")
         )
     )
 )
@@ -59,7 +57,7 @@ server <- function(input, output, session) {
 
 
     output$RT <- renderReactable({
-        reactable(dataReady(),
+        reactable::reactable(dataReady(),
                   minRow=10,
                   defaultPageSize=10,
                   highlight=T,
@@ -69,7 +67,7 @@ server <- function(input, output, session) {
                   columns=list(
                       "date"=colDef(name="Fecha",
                                     format=colFormat(datetime=T)),
-                      "usdves"=colDef(name="USDVES",
+                      "usdves"=colDef(name="USD/VES",
                                       format=colFormat(prefix="Bs.S ",
                                                        separators=T))
                   ))
