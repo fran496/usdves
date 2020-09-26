@@ -1,6 +1,8 @@
 library(shiny)
+library(reactable)
 
 usdves <- read.csv2("../data/usdves.csv", stringsAsFactors=F)
+usdves$usdves <- as.numeric(usdves$usdves)
 usdves$years <- lubridate::year(usdves$date)
 usdves$months <- as.character(lubridate::month(usdves$date, label=T, abbr=F))
 
@@ -20,7 +22,8 @@ ui <- fluidPage(
             downloadButton("download", "Descargar tabla")
             ),
         mainPanel(
-            reactable::reactableOutput("RT")
+            reactable::reactableOutput("RT"),
+            plotOutput("plot1")
         )
     )
 )
@@ -44,6 +47,17 @@ server <- function(input, output, session) {
         return(data)
     })
 
+    output$plot1 <- renderPlot({
+        last_price <- usdves$usdves[nrow(usdves)]
+
+        curve((last_price*x)/(10**6),
+              from=1,
+              to= 100,
+              xlab="Número de dólares",
+              ylab="USD/VES (Millones de bolívares)",
+              col="darkgreen")
+    })
+
     dataReady <- reactive({
         filteredData()[, c("date", "usdves")]
     })
@@ -60,7 +74,7 @@ server <- function(input, output, session) {
 
 
     output$RT <- renderReactable({
-        reactable::reactable(dataReady(),
+        reactable(dataReady(),
                   minRow=10,
                   defaultPageSize=10,
                   highlight=T,
