@@ -6,6 +6,7 @@ usdves <- read.csv2("../data/usdves.csv", stringsAsFactors=F)
 usdves$usdves <- as.numeric(usdves$usdves)
 usdves$years <- lubridate::year(usdves$date)
 usdves$months <- as.character(lubridate::month(usdves$date, label=T, abbr=F))
+last_price <- usdves$usdves[nrow(usdves)]
 
 ui <- fluidPage(
     theme=shinythemes::shinytheme("sandstone"),
