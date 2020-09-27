@@ -1,5 +1,6 @@
 library(shiny)
 library(reactable)
+library(ggplot2)
 
 usdves <- read.csv2("../data/usdves.csv", stringsAsFactors=F)
 usdves$usdves <- as.numeric(usdves$usdves)
@@ -7,6 +8,7 @@ usdves$years <- lubridate::year(usdves$date)
 usdves$months <- as.character(lubridate::month(usdves$date, label=T, abbr=F))
 
 ui <- fluidPage(
+    theme=shinythemes::shinytheme("sandstone"),
     titlePanel("Datos del par USD/VES diario"),
     sidebarLayout(
         sidebarPanel(
@@ -20,6 +22,7 @@ ui <- fluidPage(
                          label="Extensión del archivo:",
                          choices=c(".csv", ".xlsx")),
             downloadButton("download", "Descargar tabla"),
+            hr(),
             numericInput("dollars",
                          label="Calculadora de precio con última cotización",
                          value=0,
@@ -64,12 +67,15 @@ server <- function(input, output, session) {
 
 
     output$plot1 <- renderPlot({
-        curve((last_price*x)/(10**6),
-              from=1,
-              to= 100,
-              xlab="Número de dólares",
-              ylab="USD/VES (Millones de bolívares)",
-              col="darkgreen")
+        ggplot(data.frame(x=0:100), aes(x)) +
+            stat_function(fun=function(x) (last_price*x)/(10**6),
+                          xlim=c(0, 100),
+                          colour="darkgreen") +
+            labs(title="Cotización del dolar norteamericano en bolívares soberanos",
+                 x="Cantidad de dólares",
+                 y="USD/VES (Millones de bolívares soberanos)",
+                 caption="Fuente: Banco Central de Venezuela (BCV)") +
+            theme_light()
     })
 
     dataReady <- reactive({
