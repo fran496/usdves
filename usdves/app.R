@@ -17,12 +17,17 @@ ui <- fluidPage(
                         label="Mes",
                         choices="Todo"),
             radioButtons("file_extension",
-                         label="Extensión del archivo a descargar",
+                         label="Extensión del archivo:",
                          choices=c(".csv", ".xlsx")),
-            downloadButton("download", "Descargar tabla")
-            ),
+            downloadButton("download", "Descargar tabla"),
+            numericInput("dollars",
+                         label="Calculadora de precio con última cotización",
+                         value=0,
+                         min=0),
+            verbatimTextOutput("price")
+        ),
         mainPanel(
-            reactable::reactableOutput("RT"),
+            reactableOutput("RT"),
             plotOutput("plot1")
         )
     )
@@ -31,7 +36,6 @@ ui <- fluidPage(
 # Incluir función que escriba la tabla filtrada y ejecutar la función
 # en el parámetro de la función write.table
 server <- function(input, output, session) {
-
 
     filteredData <- reactive({
         data <- usdves
@@ -47,9 +51,19 @@ server <- function(input, output, session) {
         return(data)
     })
 
-    output$plot1 <- renderPlot({
-        last_price <- usdves$usdves[nrow(usdves)]
+    output$price <- renderText({
+        price <- input$dollars*last_price
+        formatted_price <- format(price,
+                                  big.mark=".",
+                                  decimal.mark=",",
+                                  digits=2,
+                                  nsmall=2,
+                                  scientific=F)
+        paste0("Bs.S ", formatted_price)
+    })
 
+
+    output$plot1 <- renderPlot({
         curve((last_price*x)/(10**6),
               from=1,
               to= 100,
@@ -71,7 +85,6 @@ server <- function(input, output, session) {
                                        data$months[data$years==input$year])
         )
     })
-
 
     output$RT <- renderReactable({
         reactable(dataReady(),
